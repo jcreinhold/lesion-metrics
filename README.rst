@@ -39,13 +39,16 @@ with the CLI::
 
     lesion-metrics -p predictions/ -t truth/ -o output.csv
 
-Or you can import the metrics and run them on label images::
+Or you can import the metrics and run them on label images:
+
+.. code-block:: python
 
     import nibabel as nib
     from lesion_metrics import dice
     pred = nib.load('pred_label.nii.gz').get_fdata()
     truth = nib.load('truth_label.nii.gz').get_fdata()
     dice_score = dice(pred, truth)
+
 
 References
 ----------
