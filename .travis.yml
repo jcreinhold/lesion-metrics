@@ -13,5 +13,5 @@ deploy:
     secure: X2gsFRENOI/vBooYC5jVgN5gO9f/vFBeF6sAB9x3S7HVibWtc2vWe2Ox8kPcJHs2NVBoxiiHvqTw8RcAZPtZ5C88FbW4ZSx62Zo1AC3AzY3Y2KsfzCKPta2URq6UDiQotgEV734jvoaZf9mpXMH4Dgdb5SJz4+Kd0HCYbWMWCoZX7togXFtnLLAMLo8rhyNIxDXhXS1q/cQsHGuAU5Moqn4EE40yIVIptUDQgX2mcGFRHZtm0bgxJMm17PUuPVH7tUAo+72EXCdg6celQtPw2GF1C0YPtQoXbUG1IgRx37cy1m1wPGEeuQfe5tmaR0bQyKHhEVmGdGMRSqKKjSVm6aZqwZV2OviP8B12959os5ryO2fchMIS3+6Cj/FXOyAXLVXydzZ9Fx3PC5a/vgvALD+/5hEJpkr9hfKoS8x0CTIOeaBu4Qmpu+s/H+dQsbBdug4Jy3Oo7MHqIw0JdBp6hcyk0Q6VFIxw5mnUmcDCrY//34Y1+HxRUNb3ojy5L8Yy39xHDvn+3rgCv3qw5NGfCMI7romlq0Ld1MB92wjX2lcKVDfm6kZleb2+e5pqB1Tz6A8JlGFW3aK+puMqJdk12+rWr3oNxDAN0AWjNCLccAvtdhl1mFzOhFTIG4XO9S7hZ8xwcEccQjIQWIFaWS38kKBoFvETwf11xt6b3DCXSvU=
   on:
     tags: true
-    repo: jcreinhold/lesion_metrics
+    repo: jcreinhold/lesion-metrics
     python: 3.8
