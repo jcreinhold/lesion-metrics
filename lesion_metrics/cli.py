@@ -77,8 +77,11 @@ def main(args=None):
     truth_fns = glob_imgs(args.truth_dir)
     n_truth = len(truth_fns)
     if n_pred != n_truth or n_pred == 0:
-        raise ValueError(f'Number of predicition and truth images must be equal and non-zero '
+        raise ValueError(f'Number of prediction and truth images must be equal and non-zero '
                          f'(# Pred.={n_pred}; # Truth={n_truth})')
+    if args.output_correlation and n_pred == 1:
+        raise ValueError('If --output-correlation enabled, the input '
+                         'directories must contain more than 1 image.')
     dcs, jis, ppvs, tprs, lfprs, ltprs, avds, isbis = [], [], [], [], [], [], [], []
     pfns, tfns = [], []
     pred_vols, truth_vols = [], []
@@ -87,7 +90,8 @@ def main(args=None):
         _, tfn, _ = split_filename(tf)
         pfns.append(pfn)
         tfns.append(tfn)
-        pred, truth = (nib.load(pf).get_fdata() > 0), (nib.load(tf).get_fdata() > 0)
+        pred = (nib.load(pf).get_fdata() > 0)
+        truth = (nib.load(tf).get_fdata() > 0)
         if args.output_correlation:
             pred_vols.append(pred)
             truth_vols.append(truth)
@@ -99,9 +103,9 @@ def main(args=None):
         ltprs.append(ltpr(pred, truth))
         avds.append(avd(pred, truth))
         isbis.append(isbi15_score(pred, truth))
-        logger.info(f'Pred: {pfn}; Truth: {tfn}; Dice: {dcs[-1]:0.2f}; Jacc: {jis[-1]:0.2f}; PPV: {ppvs[-1]:0.2f}; '
-                    f'TPR: {tprs[-1]:0.2f}; LFPR: {lfprs[-1]:0.2f}; LTPR: {ltprs[-1]:0.2f}; AVD: {avds[-1]:0.2f}; '
-                    f'ISBI15 Score: {isbis[-1]:0.2f}')
+        logger.info(f'Pred: {pfn}; Truth: {tfn}; Dice: {dcs[-1]:0.2f}; Jacc: {jis[-1]:0.2f}; '
+                    f'PPV: {ppvs[-1]:0.2f}; TPR: {tprs[-1]:0.2f}; LFPR: {lfprs[-1]:0.2f}; '
+                    f'LTPR: {ltprs[-1]:0.2f}; AVD: {avds[-1]:0.2f}; ISBI15 Score: {isbis[-1]:0.2f}')
     out = {'Pred': pfns,
            'Truth': tfns,
            'Dice': dcs,

@@ -6,7 +6,7 @@ lesion-metrics
 .. image:: https://img.shields.io/pypi/v/lesion_metrics.svg
         :target: https://pypi.python.org/pypi/lesion-metrics
 
-.. image:: https://img.shields.io/travis/jcreinhold/lesion_metrics.svg
+.. image:: https://img.shields.io/travis/jcreinhold/lesion-metrics.svg
         :target: https://travis-ci.com/jcreinhold/lesion-metrics
 
 .. image:: https://readthedocs.org/projects/lesion-metrics/badge/?version=latest
@@ -14,9 +14,7 @@ lesion-metrics
         :alt: Documentation Status
 
 
-
-
-metrics for evaluating lesion segmentations
+Various metrics for evaluating lesion segmentations [1]
 
 
 * Free software: Apache Software License 2.0
@@ -52,6 +50,4 @@ Or you can import the metrics and run them on label images::
 References
 ----------
 
-[1] Carass, Aaron, et al. "Longitudinal multiple sclerosis
-    lesion segmentation: resource and challenge." NeuroImage
-    148 (2017): 77-102.
+[1] Carass, Aaron, et al. "Longitudinal multiple sclerosis lesion segmentation: resource and challenge." NeuroImage 148 (2017): 77-102.

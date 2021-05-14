@@ -111,7 +111,7 @@ def assd(pred: Label, truth: Label) -> float:
     raise NotImplementedError
 
 
-def corr(pred_vols: Label, truth_vols: Label) -> List[float]:
+def corr(pred_vols: List[Label], truth_vols: List[Label]) -> float:
     """ pearson correlation coefficient between list of predicted and true binary volumes """
     return pearsonr(pred_vols, truth_vols)[0]
 
