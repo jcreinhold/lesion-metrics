@@ -5,7 +5,6 @@ lesion_metrics.metrics
 holds metrics to evaluate lesion segmentations
 
 Author: Jacob Reinhold (jacob.reinhold@jhu.edu)
-
 Created on: May 14, 2021
 """
 
@@ -121,8 +120,9 @@ def isbi15_score(pred: Label, truth: Label, reweighted: bool = True) -> float:
     report the score (minus volume correlation)
     for a given prediction as described in [1]
 
-    reweighted flag puts the score (minus
-    volume correlation) between 0 and 1
+    reweighted flag puts the score (excluding
+    volume correlation which requires a list of
+    labels) between 0 and 1
 
     References:
         [1] Carass, Aaron, et al. "Longitudinal multiple sclerosis

@@ -30,12 +30,20 @@ def arg_parser():
                                                  'for a set of NIfTI binary (lesion) segmentations.')
 
     required = parser.add_argument_group('Required')
-    required.add_argument('-p', '--pred-dir', type=str, required=True,
-                          help='path to directory of predictions images')
-    required.add_argument('-t', '--truth-dir', type=str, required=True,
-                          help='path to directory of corresponding truth images')
     required.add_argument('-o', '--out-file', type=str, required=True,
                           help='path to output csv file of results')
+
+    primary = parser.add_argument_group('Primary Input (provide these instead of -f)')
+    primary.add_argument('-p', '--pred-dir', type=str, default=None,
+                         help='path to directory of predictions images')
+    primary.add_argument('-t', '--truth-dir', type=str, default=None,
+                         help='path to directory of corresponding truth images')
+
+    alt = parser.add_argument_group('Alternative Input (provide this instead of -p & -t)')
+    alt.add_argument('-f', '--in-file', type=str, default=None,
+                     help='path to input csv file with (at least) two columns named '
+                          '`pred` and `truth` consisting of paths to prediction and '
+                          'corresponding truth images')
 
     options = parser.add_argument_group('Optional')
     options.add_argument('-c', '--output-correlation', action="store_true",
@@ -62,6 +70,15 @@ def split_filename(filepath):
     return path, base, ext
 
 
+def _check_files(*files):
+    msg = ''
+    for f in files:
+        if not os.path.isfile(f):
+            msg += f'{f} is not a valid path.\n'
+    if msg:
+        raise ValueError(msg + 'Aborting.')
+
+
 def main(args=None):
     """Console script for lesion_metrics."""
     if args is None:
@@ -72,9 +89,19 @@ def main(args=None):
         args = parser.parse_args(args)
     setup_log(args.verbosity)
     logger = logging.getLogger(__name__)
-    pred_fns = glob_imgs(args.pred_dir)
+    use_dirs = args.pred_dir is not None and args.truth_dir is not None
+    use_csv = args.in_file is not None
+    if use_dirs and not use_csv:
+        pred_fns = glob_imgs(args.pred_dir)
+        truth_fns = glob_imgs(args.truth_dir)
+    elif use_csv and not use_dirs:
+        csv = pd.read_csv(args.in_file)
+        pred_fns = csv['pred'].to_list()
+        truth_fns = csv['truth'].to_list()
+    else:
+        raise ValueError('Only (`--pred-dir` AND `--truth-dir`) OR '
+                         '`--in-file` should be provided.')
     n_pred = len(pred_fns)
-    truth_fns = glob_imgs(args.truth_dir)
     n_truth = len(truth_fns)
     if n_pred != n_truth or n_pred == 0:
         raise ValueError(f'Number of prediction and truth images must be equal and non-zero '
@@ -86,6 +113,7 @@ def main(args=None):
     pfns, tfns = [], []
     pred_vols, truth_vols = [], []
     for pf, tf in zip(pred_fns, truth_fns):
+        _check_files(pf, tf)
         _, pfn, _ = split_filename(pf)
         _, tfn, _ = split_filename(tf)
         pfns.append(pfn)
