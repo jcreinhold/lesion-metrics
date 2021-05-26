@@ -27,7 +27,11 @@ The easiest way to install the package is with::
 
     pip install lesion-metrics
 
-Alternatively, you can download the source and run::
+To install the dependencies of the CLI, install with::
+
+    pip install "lesion-metrics[cli]"
+
+You can also download the source and run::
 
     python setup.py install
 
@@ -44,7 +48,7 @@ Or you can import the metrics and run them on label images:
 .. code-block:: python
 
     import nibabel as nib
-    from lesion_metrics import dice
+    from lesion_metrics.metrics import dice
     pred = nib.load('pred_label.nii.gz').get_fdata()
     truth = nib.load('truth_label.nii.gz').get_fdata()
     dice_score = dice(pred, truth)

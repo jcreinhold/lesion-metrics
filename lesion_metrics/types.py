@@ -12,16 +12,18 @@ Created on: May 14, 2021
 """
 
 __all__ = [
-    'Label',
-    'NaN',
+    "Label",
+    "NaN",
 ]
 
-NaN = float('nan')
+NaN = float("nan")
 
 
 class Label:
     """ support anything that implements the methods here """
 
-    def __gt__(self): ...
+    def __gt__(self):
+        ...
 
-    def sum(self) -> float: ...
+    def sum(self) -> float:
+        ...

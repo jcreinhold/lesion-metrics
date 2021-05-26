@@ -7,7 +7,17 @@ from pathlib import Path
 import nibabel as nib
 import pytest
 
-from lesion_metrics.metrics import *
+from lesion_metrics.metrics import (
+    dice,
+    jaccard,
+    ppv,
+    tpr,
+    lfpr,
+    ltpr,
+    avd,
+    corr,
+    isbi15_score,
+)
 from lesion_metrics.types import Label
 
 
@@ -23,13 +33,13 @@ def cwd(file) -> Path:
 
 @pytest.fixture
 def pred(cwd: Path) -> Label:
-    fn = cwd / 'test_data' / 'pred' / 'pred.nii.gz'
+    fn = cwd / "test_data" / "pred" / "pred.nii.gz"
     return nib.load(fn).get_fdata()
 
 
 @pytest.fixture
 def truth(cwd: Path) -> Label:
-    fn = cwd / 'test_data' / 'truth' / 'truth.nii.gz'
+    fn = cwd / "test_data" / "truth" / "truth.nii.gz"
     return nib.load(fn).get_fdata()
 
 
@@ -41,19 +51,19 @@ def test_dice(pred: Label, truth: Label):
 
 def test_jaccard(pred: Label, truth: Label):
     jaccard_idx = jaccard(pred, truth)
-    correct = (3 / ((8 + 1 + 1) + 1))
+    correct = 3 / ((8 + 1 + 1) + 1)
     assert jaccard_idx == correct
 
 
 def test_ppv(pred: Label, truth: Label):
     ppv_score = ppv(pred, truth)
-    correct = (3 / (2 + 1 + 1))
+    correct = 3 / (2 + 1 + 1)
     assert ppv_score == correct
 
 
 def test_tpr(pred: Label, truth: Label):
     tpr_score = tpr(pred, truth)
-    correct = (3 / (8 + 1 + 1))
+    correct = 3 / (8 + 1 + 1)
     assert tpr_score == correct
 
 
@@ -92,6 +102,6 @@ def test_isbi15_score(pred: Label, truth: Label):
     assert isbi15 == correct
 
 
-@pytest.mark.skip('Not implemented.')
+@pytest.mark.skip("Not implemented.")
 def test_assd(pred: Label, truth: Label):
     pass
