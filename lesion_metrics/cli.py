@@ -215,11 +215,11 @@ def main(args: ArgType = None) -> int:
         _, tfn, _ = split_filename(tf)
         pfns.append(pfn)
         tfns.append(tfn)
-        pred = nib.load(pf).get_fdata() > 0
-        truth = nib.load(tf).get_fdata() > 0
+        pred = nib.load(pf).get_fdata() > 0.0
+        truth = nib.load(tf).get_fdata() > 0.0
         if args.output_correlation:
-            pred_vols.append(pred)
-            truth_vols.append(truth)
+            pred_vols.append(pred.sum())
+            truth_vols.append(truth.sum())
         dcs.append(dice(pred, truth))
         jis.append(jaccard(pred, truth))
         ppvs.append(ppv(pred, truth))

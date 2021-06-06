@@ -43,7 +43,7 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     description="metrics for evaluating lesion segmentations",
-    entry_points={"console_scripts": ["lesion-metrics=lesion_metrics.cli:main",],},
+    entry_points={"console_scripts": ["lesion-metrics=lesion_metrics.cli:main"]},
     install_requires=requirements,
     extras_require=extras_requirements,
     license="Apache Software License 2.0",

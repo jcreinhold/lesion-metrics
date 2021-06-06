@@ -6,7 +6,7 @@ lesion-metrics
 .. image:: https://img.shields.io/pypi/v/lesion_metrics.svg
         :target: https://pypi.python.org/pypi/lesion-metrics
 
-.. image:: https://img.shields.io/travis/jcreinhold/lesion-metrics.svg
+.. image:: https://api.travis-ci.com/jcreinhold/lesion-metrics.svg
         :target: https://travis-ci.com/jcreinhold/lesion-metrics
 
 .. image:: https://readthedocs.org/projects/lesion-metrics/badge/?version=latest
