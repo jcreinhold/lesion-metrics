@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.3 (2021-06-07)
+------------------
+
+* Fix correlation computation in CLI and other minor typos.
+
 0.1.2 (2021-05-26)
 ------------------
 
