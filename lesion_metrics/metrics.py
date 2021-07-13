@@ -26,7 +26,7 @@ from typing import List
 from scipy.stats import pearsonr
 from skimage.measure import label
 
-from lesion_metrics.types import Label, NaN
+from lesion_metrics.types import Label, NaN, Real
 
 
 def dice(pred: Label, truth: Label) -> float:
@@ -110,7 +110,7 @@ def assd(pred: Label, truth: Label) -> float:
     raise NotImplementedError
 
 
-def corr(pred_vols: List[Label], truth_vols: List[Label]) -> float:
+def corr(pred_vols: List[Real], truth_vols: List[Real]) -> float:
     """ pearson correlation coefficient btwn list of predicted and true binary vols """
     return pearsonr(pred_vols, truth_vols)[0]
 
