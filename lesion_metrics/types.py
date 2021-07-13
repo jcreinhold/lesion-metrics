@@ -11,12 +11,16 @@ Author: Jacob Reinhold (jcreinhold@gmail.com)
 Created on: May 14, 2021
 """
 
+from typing import Union
+
 __all__ = [
     "Label",
     "NaN",
+    "Real",
 ]
 
 NaN = float("nan")
+Real = Union[int, float]
 
 
 class Label:
