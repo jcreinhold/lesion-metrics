@@ -12,7 +12,7 @@ from lesion_metrics.metrics import (
     jaccard,
     ppv,
     tpr,
-    lfpr,
+    lfdr,
     ltpr,
     avd,
     corr,
@@ -67,8 +67,8 @@ def test_tpr(pred: Label, truth: Label):
     assert tpr_score == correct
 
 
-def test_lfpr(pred: Label, truth: Label):
-    lfpr_score = lfpr(pred, truth)
+def test_lfdr(pred: Label, truth: Label):
+    lfpr_score = lfdr(pred, truth)
     correct = 1 / 3
     assert lfpr_score == correct
 

@@ -13,7 +13,7 @@ __all__ = [
     "jaccard",
     "ppv",
     "tpr",
-    "lfpr",
+    "lfdr",
     "ltpr",
     "avd",
     "assd",
@@ -69,8 +69,8 @@ def tpr(pred: Label, truth: Label) -> float:
     return intersection / denom
 
 
-def lfpr(pred: Label, truth: Label) -> float:
-    """ lesion false positive rate between predicted and true binary masks """
+def lfdr(pred: Label, truth: Label, iou_minimum: float=0.3) -> float:
+    """ lesion false discovery rate between predicted and true binary masks """
     p, t = (pred > 0.0), (truth > 0.0)
     cc, n = label(p, return_num=True)
     if n == 0:
@@ -132,7 +132,7 @@ def isbi15_score(pred: Label, truth: Label, reweighted: bool = True) -> float:
     score = (
         dice(pred, truth) / 8
         + ppv(pred, truth) / 8
-        + (1 - lfpr(pred, truth)) / 4
+        + (1 - lfdr(pred, truth)) / 4
         + ltpr(pred, truth) / 4
     )
     if reweighted:
