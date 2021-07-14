@@ -16,7 +16,7 @@ with warnings.catch_warnings():
         jaccard,
         ppv,
         tpr,
-        lfpr,
+        lfdr,
         ltpr,
         avd,
         corr,
@@ -206,7 +206,7 @@ def main(args: ArgType = None) -> int:
             "If --output-correlation enabled, the input "
             "directories must contain more than 1 image."
         )
-    dcs, jis, ppvs, tprs, lfprs, ltprs, avds, isbis = [], [], [], [], [], [], [], []
+    dcs, jis, ppvs, tprs, lfdrs, ltprs, avds, isbis = [], [], [], [], [], [], [], []
     pfns, tfns = [], []
     pred_vols, truth_vols = [], []
     for pf, tf in zip(pred_fns, truth_fns):
@@ -224,13 +224,13 @@ def main(args: ArgType = None) -> int:
         jis.append(jaccard(pred, truth))
         ppvs.append(ppv(pred, truth))
         tprs.append(tpr(pred, truth))
-        lfprs.append(lfpr(pred, truth))
+        lfdrs.append(lfdr(pred, truth))
         ltprs.append(ltpr(pred, truth))
         avds.append(avd(pred, truth))
         isbis.append(isbi15_score(pred, truth))
         logger.info(
             f"Pred: {pfn}; Truth: {tfn}; Dice: {dcs[-1]:0.2f}; Jacc: {jis[-1]:0.2f}; "
-            f"PPV: {ppvs[-1]:0.2f}; TPR: {tprs[-1]:0.2f}; LFPR: {lfprs[-1]:0.2f}; "
+            f"PPV: {ppvs[-1]:0.2f}; TPR: {tprs[-1]:0.2f}; LFDR: {lfdrs[-1]:0.2f}; "
             f"LTPR: {ltprs[-1]:0.2f}; AVD: {avds[-1]:0.2f}; ISBI15: {isbis[-1]:0.2f}"
         )
     out = {
@@ -240,7 +240,7 @@ def main(args: ArgType = None) -> int:
         "Jaccard": jis,
         "PPV": ppvs,
         "TPR": tprs,
-        "LFPR": lfprs,
+        "LFDR": lfdrs,
         "LTPR": ltprs,
         "AVD": avds,
         "ISBI15 Score": isbis,
