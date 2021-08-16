@@ -84,8 +84,9 @@ def iou_per_lesion(
     cc, n = label(t, return_num=True)
     ious: List[float] = []
     for i in range(1, n + 1):
-        lesion_bbox = bbox(cc == i)
-        target_lesion = t[lesion_bbox]
+        target_lesion_whole_array = cc == i
+        lesion_bbox = bbox(target_lesion_whole_array)
+        target_lesion = target_lesion_whole_array[lesion_bbox]
         other_lesion = o[lesion_bbox]
         ious.append(jaccard(other_lesion, target_lesion))
     return ious
