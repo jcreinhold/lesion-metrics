@@ -55,7 +55,7 @@ class SegmentationVolume:
             raise ValueError(f"Invalid unit: {self.unit}")
 
     def volume_in_microlitres(self) -> float:
-        return self.volume_in_microliters()  # type: ignore[attr-defined]
+        return self.volume_in_microliters()
 
     def volume_in_microliters(self) -> float:
         per_voxel_volume = reduce(mul, self.label.spacing, 1.0)  # in microliters
