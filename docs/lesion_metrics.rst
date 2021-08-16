@@ -28,6 +28,22 @@ lesion\_metrics.types module
    :undoc-members:
    :show-inheritance:
 
+lesion\_metrics.utils module
+----------------------------
+
+.. automodule:: lesion_metrics.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lesion\_metrics.volume module
+-----------------------------
+
+.. automodule:: lesion_metrics.volume
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
