@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.6 (2021-08-16)
+------------------
+
+* Fix minor bug in IoU per lesion computation
+
 0.1.5 (2021-08-16)
 ------------------
 
