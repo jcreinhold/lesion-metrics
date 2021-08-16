@@ -28,6 +28,8 @@ autodoc_mock_imports = [
     "pandas",
     "skimage",
     "scipy",
+    "torch",
+    "torchio",
 ]
 
 import lesion_metrics
