@@ -2,6 +2,19 @@
 History
 =======
 
+0.1.5 (2021-08-16)
+------------------
+
+* Make package compliant with mypy
+* Add lesion volume calculation
+* Add support for IoU threshold for LTPR and LFPR
+
+0.1.4 (2021-07-14)
+------------------
+
+* Fix type hints in volume correlation
+* Correct name of LFPR (lesion false positive rate) to LFDR (lesion false discovery rate)
+
 0.1.3 (2021-06-07)
 ------------------
 
