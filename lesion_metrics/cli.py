@@ -27,20 +27,22 @@ ArgType = Optional[Union[argparse.Namespace, List[str]]]
 
 
 def split_filename(filepath: Union[str, Path]) -> Tuple[Path, str, str]:
-    """ split a filepath into the directory, base, and extension """
+    """split a filepath into the directory, base, and extension"""
     filepath = Path(filepath).resolve()
     path = filepath.parent
-    base = Path(filepath.stem)
+    _base = Path(filepath.stem)
     ext = filepath.suffix
     if ext == ".gz":
-        ext2 = base.suffix
-        base = base.stem
+        ext2 = _base.suffix
+        base = str(_base.stem)
         ext = ext2 + ext
-    return Path(path), str(base), ext
+    else:
+        base = str(_base)
+    return Path(path), base, ext
 
 
-def setup_log(verbosity: int):
-    """ get logger with appropriate logging level and message """
+def setup_log(verbosity: int) -> None:
+    """get logger with appropriate logging level and message"""
     if verbosity == 1:
         level = logging.getLevelName("INFO")
     elif verbosity >= 2:
@@ -55,7 +57,9 @@ def setup_log(verbosity: int):
 class _ParseType:
     @property
     def __name__(self) -> str:
-        return self.__class__.__name__
+        name = self.__class__.__name__
+        assert isinstance(name, str)
+        return name
 
     def __str__(self) -> str:
         return self.__name__
@@ -147,6 +151,13 @@ def arg_parser() -> argparse.ArgumentParser:
         help="output the volume correlation of the set of images",
     )
     options.add_argument(
+        "-it",
+        "--iou-threshold",
+        type=float,
+        default=0.0,
+        help="iou threshold for detection (in LTPR and LFDR)",
+    )
+    options.add_argument(
         "-v",
         "--verbosity",
         action="count",
@@ -157,11 +168,11 @@ def arg_parser() -> argparse.ArgumentParser:
 
 
 def glob_imgs(path: Path, ext: str = "*.nii*") -> List[Path]:
-    """ grab all `ext` files in a directory and sort them for consistency """
+    """grab all `ext` files in a directory and sort them for consistency"""
     return sorted(path.glob(ext))
 
 
-def _check_files(*files: Path):
+def _check_files(*files: Path) -> None:
     msg = ""
     for f in files:
         if not f.is_file():
@@ -224,8 +235,8 @@ def main(args: ArgType = None) -> int:
         jis.append(jaccard(pred, truth))
         ppvs.append(ppv(pred, truth))
         tprs.append(tpr(pred, truth))
-        lfdrs.append(lfdr(pred, truth))
-        ltprs.append(ltpr(pred, truth))
+        lfdrs.append(lfdr(pred, truth, args.iou_threshold))
+        ltprs.append(ltpr(pred, truth, args.iou_threshold))
         avds.append(avd(pred, truth))
         isbis.append(isbi15_score(pred, truth))
         logger.info(
@@ -249,7 +260,7 @@ def main(args: ArgType = None) -> int:
         c = corr(pred_vols, truth_vols)
         logger.info(f"Volume correlation: {c:0.2f}")
         out["Correlation"] = [None] * n_pred
-        out["Correlation"][0] = c
+        out["Correlation"][0] = c  # type: ignore[index]
     pd.DataFrame(out).to_csv(args.out_file)
     return 0
 

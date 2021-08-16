@@ -13,17 +13,16 @@ from lesion_metrics.cli import main
 
 
 @pytest.fixture
-def file() -> Path:
-    return Path(__file__).resolve()
-
-
-@pytest.fixture
-def cwd(file: Path) -> Path:
-    return file.parent
+def cwd() -> Path:
+    cwd = Path.cwd().resolve()
+    if cwd.name == "tests":
+        return cwd
+    cwd = (cwd / "tests").resolve(strict=True)
+    return cwd
 
 
 @pytest.fixture(scope="session")
-def temp_dir(tmpdir_factory) -> Path:
+def temp_dir(tmpdir_factory) -> Path:  # type: ignore[no-untyped-def]
     return Path(tmpdir_factory.mktemp("out"))
 
 
@@ -56,6 +55,6 @@ def args(pred_dir: Path, truth_dir: Path, out_file: Path) -> List[str]:
     return f"-p {pred_dir} -t {truth_dir} -o {out_file} -c".split()
 
 
-def test_cli(args: List[str]):
+def test_cli(args: List[str]) -> None:
     retval = main(args)
     assert retval == 0
