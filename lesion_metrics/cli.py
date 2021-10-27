@@ -10,6 +10,7 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     warnings.filterwarnings("ignore", category=UserWarning)
     import nibabel as nib
+    import numpy as np
     import pandas as pd
     from lesion_metrics.metrics import (
         dice,
@@ -20,15 +21,26 @@ with warnings.catch_warnings():
         ltpr,
         avd,
         corr,
-        isbi15_score,
+        isbi15_score_from_metrics,
     )
+
+    try:
+        from lesion_metrics.volume import SegmentationVolume
+        import torchio as tio
+    except (ImportError, ModuleNotFoundError):
+        SegmentationVolume = None
+        tio = None
 
 ArgType = Optional[Union[argparse.Namespace, List[str]]]
 
 
-def split_filename(filepath: Union[str, Path]) -> Tuple[Path, str, str]:
+def split_filename(
+    filepath: Union[str, Path], *, resolve: bool = False
+) -> Tuple[Path, str, str]:
     """split a filepath into the directory, base, and extension"""
-    filepath = Path(filepath).resolve()
+    filepath = Path(filepath)
+    if resolve:
+        filepath.resolve()
     path = filepath.parent
     _base = Path(filepath.stem)
     ext = filepath.suffix
@@ -198,8 +210,8 @@ def main(args: ArgType = None) -> int:
         truth_fns = glob_imgs(args.truth_dir)
     elif use_csv and not use_dirs:
         csv = pd.read_csv(args.in_file)
-        pred_fns = csv["pred"].to_list()
-        truth_fns = csv["truth"].to_list()
+        pred_fns = [Path(f) for f in csv["pred"].to_list()]
+        truth_fns = [Path(f) for f in csv["truth"].to_list()]
     else:
         raise ValueError(
             "Only (`--pred-dir` AND `--truth-dir`) OR "
@@ -220,17 +232,29 @@ def main(args: ArgType = None) -> int:
     dcs, jis, ppvs, tprs, lfdrs, ltprs, avds, isbis = [], [], [], [], [], [], [], []
     pfns, tfns = [], []
     pred_vols, truth_vols = [], []
+    if SegmentationVolume is None:
+        logger.info("Using numpy. Volume is count of positive voxels.")
+    else:
+        msg = "Using torchio. Volume is count of pos. voxels scaled by resolution."
+        logger.info(msg)
     for pf, tf in zip(pred_fns, truth_fns):
         _check_files(pf, tf)
         _, pfn, _ = split_filename(pf)
         _, tfn, _ = split_filename(tf)
         pfns.append(pfn)
         tfns.append(tfn)
-        pred = nib.load(pf).get_fdata() > 0.0
-        truth = nib.load(tf).get_fdata() > 0.0
-        if args.output_correlation:
+        if SegmentationVolume is None:
+            pred = nib.load(pf).get_fdata() > 0.0
+            truth = nib.load(tf).get_fdata() > 0.0
             pred_vols.append(pred.sum())
             truth_vols.append(truth.sum())
+        else:
+            _pred = tio.LabelMap(pf)
+            _truth = tio.LabelMap(tf)
+            pred_vols.append(SegmentationVolume(_pred).volume())
+            truth_vols.append(SegmentationVolume(_truth).volume())
+            pred = _pred.numpy().squeeze()
+            truth = _truth.numpy().squeeze()
         dcs.append(dice(pred, truth))
         jis.append(jaccard(pred, truth))
         ppvs.append(ppv(pred, truth))
@@ -238,12 +262,27 @@ def main(args: ArgType = None) -> int:
         lfdrs.append(lfdr(pred, truth, args.iou_threshold))
         ltprs.append(ltpr(pred, truth, args.iou_threshold))
         avds.append(avd(pred, truth))
-        isbis.append(isbi15_score(pred, truth))
+        isbi15_score = isbi15_score_from_metrics(
+            dcs[-1], ppvs[-1], lfdrs[-1], ltprs[-1]
+        )
+        isbis.append(isbi15_score)
         logger.info(
             f"Pred: {pfn}; Truth: {tfn}; Dice: {dcs[-1]:0.2f}; Jacc: {jis[-1]:0.2f}; "
             f"PPV: {ppvs[-1]:0.2f}; TPR: {tprs[-1]:0.2f}; LFDR: {lfdrs[-1]:0.2f}; "
             f"LTPR: {ltprs[-1]:0.2f}; AVD: {avds[-1]:0.2f}; ISBI15: {isbis[-1]:0.2f}"
         )
+    pfns.extend([None, None])
+    tfns.extend(["Mean", "Std."])
+    dcs.extend([np.mean(dcs), np.std(dcs)])
+    jis.extend([np.mean(jis), np.std(jis)])
+    ppvs.extend([np.mean(ppvs), np.std(ppvs)])
+    tprs.extend([np.mean(tprs), np.std(tprs)])
+    lfdrs.extend([np.mean(lfdrs), np.std(lfdrs)])
+    ltprs.extend([np.mean(ltprs), np.std(ltprs)])
+    avds.extend([np.mean(avds), np.std(avds)])
+    isbis.extend([np.mean(isbis), np.std(isbis)])
+    pred_vols.extend([np.mean(pred_vols), np.std(pred_vols)])
+    truth_vols.extend([np.mean(truth_vols), np.std(truth_vols)])
     out = {
         "Pred": pfns,
         "Truth": tfns,
@@ -255,11 +294,13 @@ def main(args: ArgType = None) -> int:
         "LTPR": ltprs,
         "AVD": avds,
         "ISBI15 Score": isbis,
+        "Pred. Vol.": pred_vols,
+        "Truth. Vol.": truth_vols,
     }
     if args.output_correlation:
         c = corr(pred_vols, truth_vols)
         logger.info(f"Volume correlation: {c:0.2f}")
-        out["Correlation"] = [None] * n_pred
+        out["Correlation"] = [None] * (n_pred + 2)
         out["Correlation"][0] = c  # type: ignore[index]
     pd.DataFrame(out).to_csv(args.out_file)
     return 0
