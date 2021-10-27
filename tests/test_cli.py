@@ -3,8 +3,8 @@
 """Tests for `lesion_metrics` package."""
 
 import os
-from pathlib import Path
 import shutil
+from pathlib import Path
 from typing import List, Union
 
 import pytest
