@@ -15,6 +15,7 @@ __all__ = [
     "dice",
     "iou_per_lesion",
     "isbi15_score",
+    "isbi15_score_from_metrics",
     "jaccard",
     "lfdr",
     "ltpr",
@@ -85,7 +86,7 @@ def iou_per_lesion(
     ious: List[float] = []
     for i in range(1, n + 1):
         target_lesion_whole_array = cc == i
-        lesion_bbox = bbox(target_lesion_whole_array)
+        lesion_bbox = tuple(bbox(target_lesion_whole_array))
         target_lesion = target_lesion_whole_array[lesion_bbox]
         other_lesion = o[lesion_bbox]
         ious.append(jaccard(other_lesion, target_lesion))
@@ -94,7 +95,7 @@ def iou_per_lesion(
 
 def lfdr(pred: Label, truth: Label, iou_threshold: float = 0.0) -> float:
     """lesion false discovery rate between predicted and true binary masks"""
-    assert iou_threshold >= 0.0
+    assert 0.0 <= iou_threshold <= 1.0
     p, t = (pred > 0.0), (truth > 0.0)
     p, t = to_numpy(p), to_numpy(t)
     ious = iou_per_lesion(p, t)
@@ -109,7 +110,7 @@ def lfdr(pred: Label, truth: Label, iou_threshold: float = 0.0) -> float:
 
 def ltpr(pred: Label, truth: Label, iou_threshold: float = 0.0) -> float:
     """lesion true positive rate between predicted and true binary masks"""
-    assert iou_threshold >= 0.0
+    assert 0.0 <= iou_threshold <= 1.0
     p, t = (pred > 0.0), (truth > 0.0)
     p, t = to_numpy(p), to_numpy(t)
     ious = iou_per_lesion(t, p)
@@ -146,7 +147,7 @@ def corr(pred_vols: List[Real], truth_vols: List[Real]) -> float:
 
 def isbi15_score(pred: Label, truth: Label, reweighted: bool = True) -> float:
     """
-    report the score (minus volume correlation)
+    report the score from label images (minus volume correlation)
     for a given prediction as described in [1]
 
     reweighted flag puts the score (excluding
@@ -158,12 +159,33 @@ def isbi15_score(pred: Label, truth: Label, reweighted: bool = True) -> float:
             lesion segmentation: resource and challenge." NeuroImage
             148 (2017): 77-102.
     """
-    score = (
-        dice(pred, truth) / 8
-        + ppv(pred, truth) / 8
-        + (1 - lfdr(pred, truth)) / 4
-        + ltpr(pred, truth) / 4
+    score = isbi15_score_from_metrics(
+        dice(pred, truth),
+        ppv(pred, truth),
+        lfdr(pred, truth),
+        ltpr(pred, truth),
+        reweighted=reweighted,
     )
+    return score
+
+
+def isbi15_score_from_metrics(
+    dsc: float, ppv: float, lfdr: float, ltpr: float, reweighted: bool = True
+) -> float:
+    """
+    report the score from the given metrics (minus volume correlation)
+    for a given prediction as described in [1]
+
+    reweighted flag puts the score (excluding
+    volume correlation which requires a list of
+    labels) between 0 and 1
+
+    References:
+        [1] Carass, Aaron, et al. "Longitudinal multiple sclerosis
+            lesion segmentation: resource and challenge." NeuroImage
+            148 (2017): 77-102.
+    """
+    score = dsc / 8 + ppv / 8 + (1 - lfdr) / 4 + ltpr / 4
     if reweighted:
         score *= 4 / 3
     return score
