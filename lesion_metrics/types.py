@@ -10,7 +10,7 @@ Author: Jacob Reinhold (jcreinhold@gmail.com)
 Created on: May 14, 2021
 """
 
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Tuple, Union
 
 __all__ = [
     "Label",
@@ -34,7 +34,7 @@ class Label:
     def __or__(self, other: "Label") -> "Label":
         ...
 
-    def __getitem__(self, item: Union[List[slice], int]) -> Any:
+    def __getitem__(self, item: Union[Tuple[slice, ...], int]) -> Any:
         ...
 
     def sum(self) -> float:

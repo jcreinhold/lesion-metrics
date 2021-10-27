@@ -86,3 +86,11 @@ install: clean ## install the package to the active Python's site-packages
 
 develop: clean ## symlink the package to the active Python's site-packages
 	python setup.py develop
+
+check:  ## run various code quality checks
+	black lesion_metrics
+	isort lesion_metrics
+	mypy lesion_metrics
+	black tests
+	isort tests
+	mypy tests

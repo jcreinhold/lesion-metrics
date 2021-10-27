@@ -13,7 +13,7 @@ from enum import Enum
 from functools import reduce
 from operator import mul
 from pathlib import Path
-from typing import Union, Type, TypeVar
+from typing import Type, TypeVar, Union
 
 import torchio as tio
 
