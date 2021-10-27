@@ -5,19 +5,19 @@
 from pathlib import Path
 
 import nibabel as nib
-import torch
 import pytest
+import torch
 
 from lesion_metrics.metrics import (
-    dice,
-    jaccard,
-    ppv,
-    tpr,
-    lfdr,
-    ltpr,
     avd,
     corr,
+    dice,
     isbi15_score,
+    jaccard,
+    lfdr,
+    ltpr,
+    ppv,
+    tpr,
 )
 from lesion_metrics.types import Label
 from lesion_metrics.volume import SegmentationVolume

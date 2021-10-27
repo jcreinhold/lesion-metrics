@@ -1,10 +1,10 @@
 """Console script for lesion_metrics."""
 import argparse
 import logging
-from pathlib import Path
 import sys
-from typing import List, Optional, Tuple, Union
 import warnings
+from pathlib import Path
+from typing import Any, List, Optional, Tuple, Union
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -12,21 +12,24 @@ with warnings.catch_warnings():
     import nibabel as nib
     import numpy as np
     import pandas as pd
+
     from lesion_metrics.metrics import (
-        dice,
-        jaccard,
-        ppv,
-        tpr,
-        lfdr,
-        ltpr,
         avd,
         corr,
+        dice,
         isbi15_score_from_metrics,
+        jaccard,
+        lfdr,
+        ltpr,
+        ppv,
+        tpr,
     )
 
+    SegmentationVolume: Any
     try:
-        from lesion_metrics.volume import SegmentationVolume
         import torchio as tio
+
+        from lesion_metrics.volume import SegmentationVolume
     except (ImportError, ModuleNotFoundError):
         SegmentationVolume = None
         tio = None
@@ -230,7 +233,8 @@ def main(args: ArgType = None) -> int:
             "directories must contain more than 1 image."
         )
     dcs, jis, ppvs, tprs, lfdrs, ltprs, avds, isbis = [], [], [], [], [], [], [], []
-    pfns, tfns = [], []
+    pfns: List[Optional[str]] = []
+    tfns: List[Optional[str]] = []
     pred_vols, truth_vols = [], []
     if SegmentationVolume is None:
         logger.info("Using numpy. Volume is count of positive voxels.")
