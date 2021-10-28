@@ -3,6 +3,8 @@ import argparse
 import logging
 import sys
 import warnings
+from collections import OrderedDict
+from functools import partial
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
@@ -196,6 +198,18 @@ def _check_files(*files: Path) -> None:
         raise ValueError(msg + "Aborting.")
 
 
+def _summary_statistics(data: List[float]) -> OrderedDict:
+    funcs = OrderedDict()
+    funcs["Avg"] = np.mean
+    funcs["Std"] = np.std
+    funcs["Min"] = np.min
+    funcs["25%"] = partial(np.percentile, q=25.0)
+    funcs["50%"] = np.median
+    funcs["75%"] = partial(np.percentile, q=75.0)
+    funcs["Max"] = np.max
+    return OrderedDict((label, f(data)) for label, f in funcs.items())
+
+
 def main(args: ArgType = None) -> int:
     """Console script for lesion_metrics."""
     if args is None:
@@ -275,18 +289,20 @@ def main(args: ArgType = None) -> int:
             f"PPV: {ppvs[-1]:0.2f}; TPR: {tprs[-1]:0.2f}; LFDR: {lfdrs[-1]:0.2f}; "
             f"LTPR: {ltprs[-1]:0.2f}; AVD: {avds[-1]:0.2f}; ISBI15: {isbis[-1]:0.2f}"
         )
-    pfns.extend([None, None])
-    tfns.extend(["Mean", "Std."])
-    dcs.extend([np.mean(dcs), np.std(dcs)])
-    jis.extend([np.mean(jis), np.std(jis)])
-    ppvs.extend([np.mean(ppvs), np.std(ppvs)])
-    tprs.extend([np.mean(tprs), np.std(tprs)])
-    lfdrs.extend([np.mean(lfdrs), np.std(lfdrs)])
-    ltprs.extend([np.mean(ltprs), np.std(ltprs)])
-    avds.extend([np.mean(avds), np.std(avds)])
-    isbis.extend([np.mean(isbis), np.std(isbis)])
-    pred_vols.extend([np.mean(pred_vols), np.std(pred_vols)])
-    truth_vols.extend([np.mean(truth_vols), np.std(truth_vols)])
+    dcs_summary = _summary_statistics(dcs)
+    labels = list(dcs_summary.keys())
+    pfns.extend([None] * len(labels))
+    tfns.extend(labels)
+    dcs.extend(list(dcs_summary.values()))
+    jis.extend(list(_summary_statistics(jis).values()))
+    ppvs.extend(list(_summary_statistics(ppvs).values()))
+    tprs.extend(list(_summary_statistics(tprs).values()))
+    lfdrs.extend(list(_summary_statistics(lfdrs).values()))
+    ltprs.extend(list(_summary_statistics(ltprs).values()))
+    avds.extend(list(_summary_statistics(avds).values()))
+    isbis.extend(list(_summary_statistics(isbis).values()))
+    pred_vols.extend(list(_summary_statistics(pred_vols).values()))
+    truth_vols.extend(list(_summary_statistics(truth_vols).values()))
     out = {
         "Pred": pfns,
         "Truth": tfns,
@@ -304,7 +320,7 @@ def main(args: ArgType = None) -> int:
     if args.output_correlation:
         c = corr(pred_vols, truth_vols)
         logger.info(f"Volume correlation: {c:0.2f}")
-        out["Vol. Correlation"] = [None] * (n_pred + 2)
+        out["Vol. Correlation"] = [None] * (n_pred + len(labels))
         out["Vol. Correlation"][0] = c  # type: ignore[index]
     pd.DataFrame(out).to_csv(args.out_file)
     return 0
