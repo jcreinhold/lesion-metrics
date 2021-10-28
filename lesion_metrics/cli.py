@@ -304,8 +304,8 @@ def main(args: ArgType = None) -> int:
     if args.output_correlation:
         c = corr(pred_vols, truth_vols)
         logger.info(f"Volume correlation: {c:0.2f}")
-        out["Correlation"] = [None] * (n_pred + 2)
-        out["Correlation"][0] = c  # type: ignore[index]
+        out["Vol. Correlation"] = [None] * (n_pred + 2)
+        out["Vol. Correlation"][0] = c  # type: ignore[index]
     pd.DataFrame(out).to_csv(args.out_file)
     return 0
 
