@@ -2,6 +2,21 @@
 History
 =======
 
+0.1.9 (2021-12-07)
+------------------
+
+* Add per lesion metric report CLI for a prediction/truth segmentation pair
+
+0.1.8 (2021-10-28)
+------------------
+
+* Add more summary statistics to report
+
+0.1.7 (2021-10-27)
+------------------
+
+* Add segmentation volume to report and fix minor bugs
+
 0.1.6 (2021-08-16)
 ------------------
 
