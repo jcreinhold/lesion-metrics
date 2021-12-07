@@ -9,7 +9,7 @@ from typing import List, Union
 
 import pytest
 
-from lesion_metrics.cli import main
+from lesion_metrics.cli.aggregate import main
 
 
 @pytest.fixture

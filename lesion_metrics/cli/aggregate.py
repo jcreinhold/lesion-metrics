@@ -3,18 +3,26 @@ import argparse
 import logging
 import sys
 import warnings
-from collections import OrderedDict
-from functools import partial
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     warnings.filterwarnings("ignore", category=UserWarning)
     import nibabel as nib
-    import numpy as np
     import pandas as pd
 
+    from lesion_metrics.cli.common import (
+        ArgType,
+        check_files,
+        csv_file_path,
+        dir_path,
+        file_path,
+        glob_imgs,
+        setup_log,
+        split_filename,
+        summary_statistics,
+    )
     from lesion_metrics.metrics import (
         avd,
         corr,
@@ -35,82 +43,6 @@ with warnings.catch_warnings():
     except (ImportError, ModuleNotFoundError):
         SegmentationVolume = None
         tio = None
-
-ArgType = Optional[Union[argparse.Namespace, List[str]]]
-
-
-def split_filename(
-    filepath: Union[str, Path], *, resolve: bool = False
-) -> Tuple[Path, str, str]:
-    """split a filepath into the directory, base, and extension"""
-    filepath = Path(filepath)
-    if resolve:
-        filepath.resolve()
-    path = filepath.parent
-    _base = Path(filepath.stem)
-    ext = filepath.suffix
-    if ext == ".gz":
-        ext2 = _base.suffix
-        base = str(_base.stem)
-        ext = ext2 + ext
-    else:
-        base = str(_base)
-    return Path(path), base, ext
-
-
-def setup_log(verbosity: int) -> None:
-    """get logger with appropriate logging level and message"""
-    if verbosity == 1:
-        level = logging.getLevelName("INFO")
-    elif verbosity >= 2:
-        level = logging.getLevelName("DEBUG")
-    else:
-        level = logging.getLevelName("WARNING")
-    fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    logging.basicConfig(format=fmt, level=level)
-    logging.captureWarnings(True)
-
-
-class _ParseType:
-    @property
-    def __name__(self) -> str:
-        name = self.__class__.__name__
-        assert isinstance(name, str)
-        return name
-
-    def __str__(self) -> str:
-        return self.__name__
-
-
-class file_path(_ParseType):
-    def __call__(self, string: str) -> Path:
-        path = Path(string)
-        if not path.is_file():
-            msg = f"{string} is not a valid path to a file."
-            raise argparse.ArgumentTypeError(msg)
-        return path
-
-
-class csv_file_path(_ParseType):
-    def __call__(self, string: str) -> Path:
-        if not string.endswith(".csv") or not string.isprintable():
-            msg = (
-                f"{string} is not a valid path to a csv file.\n"
-                "file needs to end with csv and only contain "
-                "printable characters."
-            )
-            raise argparse.ArgumentTypeError(msg)
-        path = Path(string)
-        return path
-
-
-class dir_path(_ParseType):
-    def __call__(self, string: str) -> Path:
-        path = Path(string)
-        if not path.is_dir():
-            msg = f"{string} is not a valid path to a directory."
-            raise argparse.ArgumentTypeError(msg)
-        return path
 
 
 def arg_parser() -> argparse.ArgumentParser:
@@ -184,32 +116,6 @@ def arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def glob_imgs(path: Path, ext: str = "*.nii*") -> List[Path]:
-    """grab all `ext` files in a directory and sort them for consistency"""
-    return sorted(path.glob(ext))
-
-
-def _check_files(*files: Path) -> None:
-    msg = ""
-    for f in files:
-        if not f.is_file():
-            msg += f"{f} is not a valid path.\n"
-    if msg:
-        raise ValueError(msg + "Aborting.")
-
-
-def _summary_statistics(data: List[float]) -> OrderedDict:
-    funcs = OrderedDict()
-    funcs["Avg"] = np.mean
-    funcs["Std"] = np.std
-    funcs["Min"] = np.min
-    funcs["25%"] = partial(np.percentile, q=25.0)
-    funcs["50%"] = np.median
-    funcs["75%"] = partial(np.percentile, q=75.0)
-    funcs["Max"] = np.max
-    return OrderedDict((label, f(data)) for label, f in funcs.items())
-
-
 def main(args: ArgType = None) -> int:
     """Console script for lesion_metrics."""
     if args is None:
@@ -256,7 +162,7 @@ def main(args: ArgType = None) -> int:
         msg = "Using torchio. Volume is count of pos. voxels scaled by resolution."
         logger.info(msg)
     for pf, tf in zip(pred_fns, truth_fns):
-        _check_files(pf, tf)
+        check_files(pf, tf)
         _, pfn, _ = split_filename(pf)
         _, tfn, _ = split_filename(tf)
         pfns.append(pfn)
@@ -289,20 +195,20 @@ def main(args: ArgType = None) -> int:
             f"PPV: {ppvs[-1]:0.2f}; TPR: {tprs[-1]:0.2f}; LFDR: {lfdrs[-1]:0.2f}; "
             f"LTPR: {ltprs[-1]:0.2f}; AVD: {avds[-1]:0.2f}; ISBI15: {isbis[-1]:0.2f}"
         )
-    dcs_summary = _summary_statistics(dcs)
+    dcs_summary = summary_statistics(dcs)
     labels = list(dcs_summary.keys())
     pfns.extend([None] * len(labels))
     tfns.extend(labels)
     dcs.extend(list(dcs_summary.values()))
-    jis.extend(list(_summary_statistics(jis).values()))
-    ppvs.extend(list(_summary_statistics(ppvs).values()))
-    tprs.extend(list(_summary_statistics(tprs).values()))
-    lfdrs.extend(list(_summary_statistics(lfdrs).values()))
-    ltprs.extend(list(_summary_statistics(ltprs).values()))
-    avds.extend(list(_summary_statistics(avds).values()))
-    isbis.extend(list(_summary_statistics(isbis).values()))
-    pred_vols.extend(list(_summary_statistics(pred_vols).values()))
-    truth_vols.extend(list(_summary_statistics(truth_vols).values()))
+    jis.extend(list(summary_statistics(jis).values()))
+    ppvs.extend(list(summary_statistics(ppvs).values()))
+    tprs.extend(list(summary_statistics(tprs).values()))
+    lfdrs.extend(list(summary_statistics(lfdrs).values()))
+    ltprs.extend(list(summary_statistics(ltprs).values()))
+    avds.extend(list(summary_statistics(avds).values()))
+    isbis.extend(list(summary_statistics(isbis).values()))
+    pred_vols.extend(list(summary_statistics(pred_vols).values()))
+    truth_vols.extend(list(summary_statistics(truth_vols).values()))
     out = {
         "Pred": pfns,
         "Truth": tfns,
@@ -322,7 +228,7 @@ def main(args: ArgType = None) -> int:
         logger.info(f"Volume correlation: {c:0.2f}")
         out["Vol. Correlation"] = [None] * (n_pred + len(labels))
         out["Vol. Correlation"][0] = c  # type: ignore[index]
-    pd.DataFrame(out).to_csv(args.out_file)
+    pd.DataFrame(out).to_csv(args.out_file, index=False)
     return 0
 
 
