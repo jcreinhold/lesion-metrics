@@ -16,6 +16,7 @@ __all__ = [
     "dir_or_file_path",
     "file_path",
     "glob_imgs",
+    "pad_with_none_to_length",
     "setup_log",
     "split_filename",
     "summary_statistics",
@@ -26,7 +27,7 @@ import logging
 from collections import OrderedDict
 from functools import partial
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -130,7 +131,7 @@ def check_files(*files: Path) -> None:
         raise ValueError(msg + "Aborting.")
 
 
-def summary_statistics(data: List[float]) -> OrderedDict:
+def summary_statistics(data: Union[List[int], List[float]]) -> OrderedDict:
     funcs: OrderedDict[str, Callable] = OrderedDict()
     funcs["Avg"] = np.mean
     funcs["Std"] = np.std
@@ -140,3 +141,13 @@ def summary_statistics(data: List[float]) -> OrderedDict:
     funcs["75%"] = partial(np.percentile, q=75.0)
     funcs["Max"] = np.max
     return OrderedDict((label, f(data)) for label, f in funcs.items())
+
+
+def pad_with_none_to_length(lst: List[Any], length: int) -> List[Any]:
+    current_length = len(lst)
+    if length <= current_length:
+        return lst
+    n = length - current_length
+    padded = lst + ([None] * n)
+    assert len(padded) == length
+    return padded

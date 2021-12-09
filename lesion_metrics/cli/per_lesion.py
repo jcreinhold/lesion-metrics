@@ -19,11 +19,12 @@ with warnings.catch_warnings():
         ArgType,
         csv_file_path,
         dir_or_file_path,
+        pad_with_none_to_length,
         setup_log,
         split_filename,
         summary_statistics,
     )
-    from lesion_metrics.metrics import avd, corr, dice, jaccard, lfdr, ltpr, ppv, tpr
+    from lesion_metrics.metrics import avd, dice, jaccard, lfdr, ltpr, ppv, tpr
     from lesion_metrics.utils import bbox
 
     SegmentationVolume: Any
@@ -34,16 +35,6 @@ with warnings.catch_warnings():
     except (ImportError, ModuleNotFoundError):
         SegmentationVolume = None
         tio = None
-
-
-def pad_with_none_to_length(lst: List[Any], length: int) -> List[Any]:
-    current_length = len(lst)
-    if length <= current_length:
-        return lst
-    n = length - current_length
-    padded = lst + ([None] * n)
-    assert len(padded) == length
-    return padded
 
 
 def arg_parser() -> argparse.ArgumentParser:
@@ -127,8 +118,8 @@ def main(args: ArgType = None) -> int:
         truth_vols.append(SegmentationVolume(_truth).volume())
         pred = _pred.numpy().squeeze()
         truth = _truth.numpy().squeeze()
-    lfdrs.append(lfdr(pred, truth, args.iou_threshold))
-    ltprs.append(ltpr(pred, truth, args.iou_threshold))
+    lfdrs.append(lfdr(pred, truth, iou_threshold=args.iou_threshold))
+    ltprs.append(ltpr(pred, truth, iou_threshold=args.iou_threshold))
     cc_truth, n_truth = label(truth, return_num=True)
     cc_pred, _ = label(pred, return_num=True)
     for i in range(1, n_truth + 1):

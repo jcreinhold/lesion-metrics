@@ -10,16 +10,17 @@ Author: Jacob Reinhold (jcreinhold@gmail.com)
 Created on: May 14, 2021
 """
 
+from pathlib import Path
 from typing import Any, Optional, Tuple, Union
 
 __all__ = [
     "Label",
     "NaN",
-    "Real",
+    "PathLike",
 ]
 
 NaN = float("nan")
-Real = Union[int, float]
+PathLike = Union[str, Path]
 
 
 class Label:
