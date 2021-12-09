@@ -3,7 +3,7 @@ History
 =======
 
 0.1.10 (2021-12-09)
-------------------
+-------------------
 
 * Add lesion count to report
 * Add helper metric calculator class
