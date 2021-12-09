@@ -19,6 +19,7 @@ with warnings.catch_warnings():
         dir_path,
         file_path,
         glob_imgs,
+        pad_with_none_to_length,
         setup_log,
         split_filename,
         summary_statistics,
@@ -156,6 +157,7 @@ def main(args: ArgType = None) -> int:
     pfns: List[Optional[str]] = []
     tfns: List[Optional[str]] = []
     pred_vols, truth_vols = [], []
+    pred_counts, truth_counts = [], []
     if SegmentationVolume is None:
         logger.info("Using numpy. Volume is count of positive voxels.")
     else:
@@ -183,13 +185,25 @@ def main(args: ArgType = None) -> int:
         jis.append(jaccard(pred, truth))
         ppvs.append(ppv(pred, truth))
         tprs.append(tpr(pred, truth))
-        lfdrs.append(lfdr(pred, truth, args.iou_threshold))
-        ltprs.append(ltpr(pred, truth, args.iou_threshold))
+        __lfdr = lfdr(
+            pred, truth, iou_threshold=args.iou_threshold, return_pred_count=True
+        )
+        assert isinstance(__lfdr, tuple)
+        _lfdr, n_pred = __lfdr
+        lfdrs.append(_lfdr)
+        __ltpr = ltpr(
+            pred, truth, iou_threshold=args.iou_threshold, return_truth_count=True
+        )
+        assert isinstance(__ltpr, tuple)
+        _ltpr, n_truth = __ltpr
+        ltprs.append(_ltpr)
         avds.append(avd(pred, truth))
         isbi15_score = isbi15_score_from_metrics(
             dcs[-1], ppvs[-1], lfdrs[-1], ltprs[-1]
         )
         isbis.append(isbi15_score)
+        pred_counts.append(n_pred)
+        truth_counts.append(n_truth)
         logger.info(
             f"Pred: {pfn}; Truth: {tfn}; Dice: {dcs[-1]:0.2f}; Jacc: {jis[-1]:0.2f}; "
             f"PPV: {ppvs[-1]:0.2f}; TPR: {tprs[-1]:0.2f}; LFDR: {lfdrs[-1]:0.2f}; "
@@ -197,8 +211,8 @@ def main(args: ArgType = None) -> int:
         )
     dcs_summary = summary_statistics(dcs)
     labels = list(dcs_summary.keys())
-    pfns.extend([None] * len(labels))
     tfns.extend(labels)
+    pfns = pad_with_none_to_length(pfns, len(tfns))
     dcs.extend(list(dcs_summary.values()))
     jis.extend(list(summary_statistics(jis).values()))
     ppvs.extend(list(summary_statistics(ppvs).values()))
@@ -209,6 +223,8 @@ def main(args: ArgType = None) -> int:
     isbis.extend(list(summary_statistics(isbis).values()))
     pred_vols.extend(list(summary_statistics(pred_vols).values()))
     truth_vols.extend(list(summary_statistics(truth_vols).values()))
+    pred_counts.extend(list(summary_statistics(pred_counts).values()))
+    truth_counts.extend(list(summary_statistics(truth_counts).values()))
     out = {
         "Pred": pfns,
         "Truth": tfns,
@@ -222,12 +238,16 @@ def main(args: ArgType = None) -> int:
         "ISBI15 Score": isbis,
         "Pred. Vol.": pred_vols,
         "Truth. Vol.": truth_vols,
+        "Pred. Count": pred_counts,
+        "Truth. Count": truth_counts,
     }
     if args.output_correlation:
-        c = corr(pred_vols, truth_vols)
-        logger.info(f"Volume correlation: {c:0.2f}")
-        out["Vol. Correlation"] = [None] * (n_pred + len(labels))
-        out["Vol. Correlation"][0] = c  # type: ignore[index]
+        vc = corr(pred_vols, truth_vols)
+        logger.info(f"Volume correlation: {vc:0.2f}")
+        out["Vol. Correlation"] = pad_with_none_to_length([vc], len(truth_vols))
+        cc = corr(pred_counts, truth_counts)
+        logger.info(f"Count correlation: {cc:0.2f}")
+        out["Count Correlation"] = pad_with_none_to_length([cc], len(truth_vols))
     pd.DataFrame(out).to_csv(args.out_file, index=False)
     return 0
 

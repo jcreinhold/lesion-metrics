@@ -23,12 +23,12 @@ __all__ = [
     "tpr",
 ]
 
-from typing import List
+from typing import List, Tuple, Union
 
 from scipy.stats import pearsonr
 from skimage.measure import label
 
-from lesion_metrics.types import Label, NaN, Real
+from lesion_metrics.types import Label, NaN
 from lesion_metrics.utils import bbox, to_numpy
 
 
@@ -77,9 +77,8 @@ def tpr(pred: Label, truth: Label) -> float:
 
 
 def iou_per_lesion(
-    target: Label,
-    other: Label,
-) -> List[float]:
+    target: Label, other: Label, *, return_count: bool = False
+) -> Union[List[float], Tuple[List[float], int]]:
     """iou of each lesion using target as reference"""
     t, o = (target > 0.0), (other > 0.0)
     cc, n = label(t, return_num=True)
@@ -90,37 +89,62 @@ def iou_per_lesion(
         target_lesion = target_lesion_whole_array[lesion_bbox]
         other_lesion = o[lesion_bbox]
         ious.append(jaccard(other_lesion, target_lesion))
-    return ious
+    if return_count:
+        return ious, n
+    else:
+        return ious
 
 
-def lfdr(pred: Label, truth: Label, iou_threshold: float = 0.0) -> float:
+def lfdr(
+    pred: Label,
+    truth: Label,
+    *,
+    iou_threshold: float = 0.0,
+    return_pred_count: bool = False
+) -> Union[float, Tuple[float, int]]:
     """lesion false discovery rate between predicted and true binary masks"""
     assert 0.0 <= iou_threshold <= 1.0
     p, t = (pred > 0.0), (truth > 0.0)
     p, t = to_numpy(p), to_numpy(t)
-    ious = iou_per_lesion(p, t)
+    ious, n_pred = iou_per_lesion(p, t, return_count=True)
+    assert isinstance(ious, list)
+    assert isinstance(n_pred, int)
     if not ious:
         return NaN
     false_positives = [iou <= iou_threshold for iou in ious]
     fp = sum(false_positives)
     fp_plus_tp = len(false_positives)
     score: float = fp / fp_plus_tp
-    return score
+    if return_pred_count:
+        return score, n_pred
+    else:
+        return score
 
 
-def ltpr(pred: Label, truth: Label, iou_threshold: float = 0.0) -> float:
+def ltpr(
+    pred: Label,
+    truth: Label,
+    *,
+    iou_threshold: float = 0.0,
+    return_truth_count: bool = False
+) -> Union[float, Tuple[float, int]]:
     """lesion true positive rate between predicted and true binary masks"""
     assert 0.0 <= iou_threshold <= 1.0
     p, t = (pred > 0.0), (truth > 0.0)
     p, t = to_numpy(p), to_numpy(t)
-    ious = iou_per_lesion(t, p)
+    ious, n_truth = iou_per_lesion(t, p, return_count=True)
+    assert isinstance(ious, list)
+    assert isinstance(n_truth, int)
     if not ious:
         return NaN
     true_positives = [iou > iou_threshold for iou in ious]
     tp = sum(true_positives)
     tp_plus_fp = len(true_positives)
     score: float = tp / tp_plus_fp
-    return score
+    if return_truth_count:
+        return score, n_truth
+    else:
+        return score
 
 
 def avd(pred: Label, truth: Label) -> float:
@@ -139,13 +163,15 @@ def assd(pred: Label, truth: Label) -> float:
     raise NotImplementedError
 
 
-def corr(pred_vols: List[Real], truth_vols: List[Real]) -> float:
+def corr(
+    pred_vols: Union[List[int], List[float]], truth_vols: Union[List[int], List[float]]
+) -> float:
     """pearson correlation coefficient btwn list of predicted and true binary vols"""
     coef: float = pearsonr(pred_vols, truth_vols)[0]
     return coef
 
 
-def isbi15_score(pred: Label, truth: Label, reweighted: bool = True) -> float:
+def isbi15_score(pred: Label, truth: Label, *, reweighted: bool = True) -> float:
     """
     report the score from label images (minus volume correlation)
     for a given prediction as described in [1]
@@ -159,18 +185,18 @@ def isbi15_score(pred: Label, truth: Label, reweighted: bool = True) -> float:
             lesion segmentation: resource and challenge." NeuroImage
             148 (2017): 77-102.
     """
+    _lfdr = lfdr(pred, truth)
+    assert isinstance(_lfdr, float)
+    _ltpr = ltpr(pred, truth)
+    assert isinstance(_ltpr, float)
     score = isbi15_score_from_metrics(
-        dice(pred, truth),
-        ppv(pred, truth),
-        lfdr(pred, truth),
-        ltpr(pred, truth),
-        reweighted=reweighted,
+        dice(pred, truth), ppv(pred, truth), _lfdr, _ltpr, reweighted=reweighted
     )
     return score
 
 
 def isbi15_score_from_metrics(
-    dsc: float, ppv: float, lfdr: float, ltpr: float, reweighted: bool = True
+    dsc: float, ppv: float, lfdr: float, ltpr: float, *, reweighted: bool = True
 ) -> float:
     """
     report the score from the given metrics (minus volume correlation)

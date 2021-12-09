@@ -17,6 +17,8 @@ from typing import Type, TypeVar, Union
 
 import torchio as tio
 
+from lesion_metrics.types import PathLike
+
 SV = TypeVar("SV", bound="SegmentationVolume")
 
 
@@ -39,7 +41,7 @@ class SegmentationVolume:
         self.unit = unit
 
     @classmethod
-    def from_filename(cls: Type[SV], path: Union[Path, str]) -> SV:
+    def from_filename(cls: Type[SV], path: PathLike) -> SV:
         label = tio.LabelMap(path)
         return cls(label)
 
