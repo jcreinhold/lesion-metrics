@@ -31,10 +31,6 @@ To install the dependencies of the CLI, install with::
 
     pip install "lesion-metrics[cli]"
 
-To install the dependencies for total lesion burden/volume computation (see ``lesion_metrics.volume``), install with::
-
-    pip install "lesion-metrics[volume]"
-
 You can also download the source and run::
 
     python setup.py install
