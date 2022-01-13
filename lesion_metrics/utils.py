@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-lesion_metrics.utils
-
-utilities for computing lesion metrics
-
+"""Utilities for lesion metrics
 Author: Jacob Reinhold (jcreinhold@gmail.com)
 Created on: 16 Aug 2021
 """
@@ -13,18 +8,19 @@ __all__ = [
     "to_numpy",
 ]
 
-from itertools import combinations
-from typing import List
+import builtins
+import itertools
+import typing
 
-from lesion_metrics.types import Label
+import lesion_metrics.typing as lmt
 
 
-def bbox(label: Label) -> List[slice]:
+def bbox(label: lmt.Label) -> typing.List[builtins.slice]:
     ndim = label.ndim
     assert isinstance(ndim, int)
     dims = reversed(range(ndim))
-    indices: List[slice] = []
-    for dim in combinations(dims, ndim - 1):
+    indices: typing.List[builtins.slice] = []
+    for dim in itertools.combinations(dims, ndim - 1):
         nonzero = label.any(dim).nonzero()
         is_numpy = isinstance(nonzero, tuple)
         nonzero = nonzero[0] if is_numpy else nonzero.squeeze()
@@ -32,7 +28,7 @@ def bbox(label: Label) -> List[slice]:
     return indices
 
 
-def to_numpy(label: Label) -> Label:
+def to_numpy(label: lmt.Label) -> lmt.Label:
     if hasattr(label, "numpy"):
         label = label.numpy()  # type: ignore[attr-defined]
     return label

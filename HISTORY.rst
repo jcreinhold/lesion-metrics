@@ -2,6 +2,12 @@
 History
 =======
 
+0.1.11 (2022-01-13)
+-------------------
+
+* Use pymedio to open files instead of torchio
+* Refactor for consistency with other projects and code quality
+
 0.1.10 (2021-12-09)
 -------------------
 

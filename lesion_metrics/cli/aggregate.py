@@ -1,49 +1,21 @@
 """Console script for lesion_metrics."""
 import argparse
+import builtins
 import logging
+import pathlib
 import sys
+import typing
 import warnings
-from pathlib import Path
-from typing import Any, List, Optional
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     warnings.filterwarnings("ignore", category=UserWarning)
-    import nibabel as nib
+    import medio.image as mioi
     import pandas as pd
 
-    from lesion_metrics.cli.common import (
-        ArgType,
-        check_files,
-        csv_file_path,
-        dir_path,
-        file_path,
-        glob_imgs,
-        pad_with_none_to_length,
-        setup_log,
-        split_filename,
-        summary_statistics,
-    )
-    from lesion_metrics.metrics import (
-        avd,
-        corr,
-        dice,
-        isbi15_score_from_metrics,
-        jaccard,
-        lfdr,
-        ltpr,
-        ppv,
-        tpr,
-    )
-
-    SegmentationVolume: Any
-    try:
-        import torchio as tio
-
-        from lesion_metrics.volume import SegmentationVolume
-    except (ImportError, ModuleNotFoundError):
-        SegmentationVolume = None
-        tio = None
+    import lesion_metrics.cli.common as lmcc
+    import lesion_metrics.metrics as lmm
+    import lesion_metrics.volume as lmv
 
 
 def arg_parser() -> argparse.ArgumentParser:
@@ -57,7 +29,7 @@ def arg_parser() -> argparse.ArgumentParser:
     required.add_argument(
         "-o",
         "--out-file",
-        type=csv_file_path(),
+        type=lmcc.csv_file_path(),
         required=True,
         help="path to output csv file of results",
     )
@@ -66,14 +38,14 @@ def arg_parser() -> argparse.ArgumentParser:
     primary.add_argument(
         "-p",
         "--pred-dir",
-        type=dir_path(),
+        type=lmcc.dir_path(),
         default=None,
         help="path to directory of predictions images",
     )
     primary.add_argument(
         "-t",
         "--truth-dir",
-        type=dir_path(),
+        type=lmcc.dir_path(),
         default=None,
         help="path to directory of corresponding truth images",
     )
@@ -84,7 +56,7 @@ def arg_parser() -> argparse.ArgumentParser:
     alt.add_argument(
         "-f",
         "--in-file",
-        type=file_path(),
+        type=lmcc.file_path(),
         default=None,
         help=(
             "path to input csv file with (at least) two columns named "
@@ -117,7 +89,7 @@ def arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(args: ArgType = None) -> int:
+def main(args: lmcc.ArgType = None) -> builtins.int:
     """Console script for lesion_metrics."""
     if args is None:
         parser = arg_parser()
@@ -125,17 +97,17 @@ def main(args: ArgType = None) -> int:
     elif isinstance(args, list):
         parser = arg_parser()
         args = parser.parse_args(args)
-    setup_log(args.verbosity)
+    lmcc.setup_log(args.verbosity)
     logger = logging.getLogger(__name__)
     use_dirs = args.pred_dir is not None and args.truth_dir is not None
     use_csv = args.in_file is not None
     if use_dirs and not use_csv:
-        pred_fns = glob_imgs(args.pred_dir)
-        truth_fns = glob_imgs(args.truth_dir)
+        pred_fns = lmcc.glob_imgs(args.pred_dir)
+        truth_fns = lmcc.glob_imgs(args.truth_dir)
     elif use_csv and not use_dirs:
         csv = pd.read_csv(args.in_file)
-        pred_fns = [Path(f) for f in csv["pred"].to_list()]
-        truth_fns = [Path(f) for f in csv["truth"].to_list()]
+        pred_fns = [pathlib.Path(f) for f in csv["pred"].to_list()]
+        truth_fns = [pathlib.Path(f) for f in csv["truth"].to_list()]
     else:
         raise ValueError(
             "Only (`--pred-dir` AND `--truth-dir`) OR "
@@ -154,51 +126,40 @@ def main(args: ArgType = None) -> int:
             "directories must contain more than 1 image."
         )
     dcs, jis, ppvs, tprs, lfdrs, ltprs, avds, isbis = [], [], [], [], [], [], [], []
-    pfns: List[Optional[str]] = []
-    tfns: List[Optional[str]] = []
+    pfns: typing.List[typing.Optional[builtins.str]] = []
+    tfns: typing.List[typing.Optional[builtins.str]] = []
     pred_vols, truth_vols = [], []
     pred_counts, truth_counts = [], []
-    if SegmentationVolume is None:
-        logger.info("Using numpy. Volume is count of positive voxels.")
-    else:
-        msg = "Using torchio. Volume is count of pos. voxels scaled by resolution."
-        logger.info(msg)
     for pf, tf in zip(pred_fns, truth_fns):
-        check_files(pf, tf)
-        _, pfn, _ = split_filename(pf)
-        _, tfn, _ = split_filename(tf)
+        lmcc.check_files(pf, tf)
+        _, pfn, _ = lmcc.split_filename(pf)
+        _, tfn, _ = lmcc.split_filename(tf)
         pfns.append(pfn)
         tfns.append(tfn)
-        if SegmentationVolume is None:
-            pred = nib.load(pf).get_fdata() > 0.0
-            truth = nib.load(tf).get_fdata() > 0.0
-            pred_vols.append(pred.sum())
-            truth_vols.append(truth.sum())
-        else:
-            _pred = tio.LabelMap(pf)
-            _truth = tio.LabelMap(tf)
-            pred_vols.append(SegmentationVolume(_pred).volume())
-            truth_vols.append(SegmentationVolume(_truth).volume())
-            pred = _pred.numpy().squeeze()
-            truth = _truth.numpy().squeeze()
-        dcs.append(dice(pred, truth))
-        jis.append(jaccard(pred, truth))
-        ppvs.append(ppv(pred, truth))
-        tprs.append(tpr(pred, truth))
-        __lfdr = lfdr(
+        _pred = mioi.Image.from_path(pf)
+        _truth = mioi.Image.from_path(tf)
+        pred_vols.append(lmv.SegmentationVolume(_pred).volume())
+        truth_vols.append(lmv.SegmentationVolume(_truth).volume())
+        pred = _pred.squeeze()
+        truth = _truth.squeeze()
+        dcs.append(lmm.dice(pred, truth))
+        jis.append(lmm.jaccard(pred, truth))
+        ppvs.append(lmm.ppv(pred, truth))
+        tprs.append(lmm.tpr(pred, truth))
+        __lfdr = lmm.lfdr(
             pred, truth, iou_threshold=args.iou_threshold, return_pred_count=True
         )
         assert isinstance(__lfdr, tuple)
         _lfdr, n_pred = __lfdr
         lfdrs.append(_lfdr)
-        __ltpr = ltpr(
+        __ltpr = lmm.ltpr(
             pred, truth, iou_threshold=args.iou_threshold, return_truth_count=True
         )
         assert isinstance(__ltpr, tuple)
         _ltpr, n_truth = __ltpr
         ltprs.append(_ltpr)
-        avds.append(avd(pred, truth))
-        isbi15_score = isbi15_score_from_metrics(
+        avds.append(lmm.avd(pred, truth))
+        isbi15_score = lmm.isbi15_score_from_metrics(
             dcs[-1], ppvs[-1], lfdrs[-1], ltprs[-1]
         )
         isbis.append(isbi15_score)
@@ -209,22 +170,22 @@ def main(args: ArgType = None) -> int:
             f"PPV: {ppvs[-1]:0.2f}; TPR: {tprs[-1]:0.2f}; LFDR: {lfdrs[-1]:0.2f}; "
             f"LTPR: {ltprs[-1]:0.2f}; AVD: {avds[-1]:0.2f}; ISBI15: {isbis[-1]:0.2f}"
         )
-    dcs_summary = summary_statistics(dcs)
+    dcs_summary = lmcc.summary_statistics(dcs)
     labels = list(dcs_summary.keys())
     tfns.extend(labels)
-    pfns = pad_with_none_to_length(pfns, len(tfns))
+    pfns = lmcc.pad_with_none_to_length(pfns, len(tfns))
     dcs.extend(list(dcs_summary.values()))
-    jis.extend(list(summary_statistics(jis).values()))
-    ppvs.extend(list(summary_statistics(ppvs).values()))
-    tprs.extend(list(summary_statistics(tprs).values()))
-    lfdrs.extend(list(summary_statistics(lfdrs).values()))
-    ltprs.extend(list(summary_statistics(ltprs).values()))
-    avds.extend(list(summary_statistics(avds).values()))
-    isbis.extend(list(summary_statistics(isbis).values()))
-    pred_vols.extend(list(summary_statistics(pred_vols).values()))
-    truth_vols.extend(list(summary_statistics(truth_vols).values()))
-    pred_counts.extend(list(summary_statistics(pred_counts).values()))
-    truth_counts.extend(list(summary_statistics(truth_counts).values()))
+    jis.extend(list(lmcc.summary_statistics(jis).values()))
+    ppvs.extend(list(lmcc.summary_statistics(ppvs).values()))
+    tprs.extend(list(lmcc.summary_statistics(tprs).values()))
+    lfdrs.extend(list(lmcc.summary_statistics(lfdrs).values()))
+    ltprs.extend(list(lmcc.summary_statistics(ltprs).values()))
+    avds.extend(list(lmcc.summary_statistics(avds).values()))
+    isbis.extend(list(lmcc.summary_statistics(isbis).values()))
+    pred_vols.extend(list(lmcc.summary_statistics(pred_vols).values()))
+    truth_vols.extend(list(lmcc.summary_statistics(truth_vols).values()))
+    pred_counts.extend(list(lmcc.summary_statistics(pred_counts).values()))
+    truth_counts.extend(list(lmcc.summary_statistics(truth_counts).values()))
     out = {
         "Pred": pfns,
         "Truth": tfns,
@@ -242,17 +203,15 @@ def main(args: ArgType = None) -> int:
         "Truth. Count": truth_counts,
     }
     if args.output_correlation:
-        vc = corr(pred_vols, truth_vols)
+        vc = lmm.corr(pred_vols, truth_vols)
         logger.info(f"Volume correlation: {vc:0.2f}")
-        out["Vol. Correlation"] = pad_with_none_to_length([vc], len(truth_vols))
-        cc = corr(pred_counts, truth_counts)
+        out["Vol. Correlation"] = lmcc.pad_with_none_to_length([vc], len(truth_vols))
+        cc = lmm.corr(pred_counts, truth_counts)
         logger.info(f"Count correlation: {cc:0.2f}")
-        out["Count Correlation"] = pad_with_none_to_length([cc], len(truth_vols))
+        out["Count Correlation"] = lmcc.pad_with_none_to_length([cc], len(truth_vols))
     pd.DataFrame(out).to_csv(args.out_file, index=False)
     return 0
 
 
 if __name__ == "__main__":
-    parser = arg_parser()
-    args = parser.parse_args()
-    sys.exit(main(args))  # pragma: no cover
+    sys.exit(main())  # pragma: no cover

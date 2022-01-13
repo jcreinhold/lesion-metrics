@@ -1,36 +1,20 @@
-# -*- coding: utf-8 -*-
-"""
-lesion_metrics.helper
-
-holds helper class to evaluate all metrics on a pair of
-lesion segmentations
-
+"""Evaluate all metrics on a pair of lesion segmentations
 Author: Jacob Reinhold
-Created on: 09 Dec 2021
 """
 
-from dataclasses import dataclass
-from typing import Type, TypeVar
+from __future__ import annotations
 
-import torchio as tio
+import builtins
+import dataclasses
 
-from lesion_metrics.metrics import (
-    avd,
-    dice,
-    isbi15_score_from_metrics,
-    jaccard,
-    lfdr,
-    ltpr,
-    ppv,
-    tpr,
-)
-from lesion_metrics.types import PathLike
-from lesion_metrics.volume import SegmentationVolume
+import medio.image as mioi
 
-M = TypeVar("M", bound="Metrics")
+import lesion_metrics.metrics as lmm
+import lesion_metrics.typing as lmt
+import lesion_metrics.volume as lmv
 
 
-@dataclass
+@dataclasses.dataclass
 class Metrics:
     avd: float
     dice: float
@@ -47,27 +31,31 @@ class Metrics:
 
     @classmethod
     def from_filenames(
-        cls: Type[M],
-        pred_filename: PathLike,
-        truth_filename: PathLike,
+        cls,
+        pred_filename: lmt.PathLike,
+        truth_filename: lmt.PathLike,
         *,
-        iou_threshold: float = 0.0
-    ) -> M:
+        iou_threshold: builtins.float = 0.0
+    ) -> Metrics:
         assert 0.0 <= iou_threshold < 1.0
-        pred = tio.LabelMap(pred_filename)
-        truth = tio.LabelMap(truth_filename)
-        _avd = avd(pred, truth)
-        dc = dice(pred, truth)
-        jc = jaccard(pred, truth)
-        __lfdr = lfdr(pred, truth, iou_threshold=iou_threshold, return_pred_count=True)
+        pred = mioi.Image.from_path(pred_filename)
+        truth = mioi.Image.from_path(truth_filename)
+        _avd = lmm.avd(pred, truth)
+        dc = lmm.dice(pred, truth)
+        jc = lmm.jaccard(pred, truth)
+        __lfdr = lmm.lfdr(
+            pred, truth, iou_threshold=iou_threshold, return_pred_count=True
+        )
         assert isinstance(__lfdr, tuple)
         _lfdr, np = __lfdr
-        __ltpr = ltpr(pred, truth, iou_threshold=iou_threshold, return_truth_count=True)
+        __ltpr = lmm.ltpr(
+            pred, truth, iou_threshold=iou_threshold, return_truth_count=True
+        )
         assert isinstance(__ltpr, tuple)
         _ltpr, nt = __lfdr
-        _ppv = ppv(pred, truth)
-        _tpr = tpr(pred, truth)
-        isbi15 = isbi15_score_from_metrics(dc, _ppv, _lfdr, _ltpr)
-        vol_t = SegmentationVolume(truth).volume()
-        vol_p = SegmentationVolume(pred).volume()
+        _ppv = lmm.ppv(pred, truth)
+        _tpr = lmm.tpr(pred, truth)
+        isbi15 = lmm.isbi15_score_from_metrics(dc, _ppv, _lfdr, _ltpr)
+        vol_t = lmv.SegmentationVolume(truth).volume()
+        vol_p = lmv.SegmentationVolume(pred).volume()
         return cls(_avd, dc, isbi15, jc, _lfdr, _ltpr, _ppv, _tpr, vol_t, vol_p, nt, np)
