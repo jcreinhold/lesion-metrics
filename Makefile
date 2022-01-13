@@ -1,4 +1,24 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help
+.PHONY: \
+	black \
+	clean \
+	clean-test \
+	clean-pyc \
+	clean-build \
+	coverage \
+	dist \
+	docs \
+	format \
+	help \
+	install \
+	isort \
+	lint/flake8 \
+	mypy \
+	release \
+	security \
+	servedocs \
+	test \
+	test-all
+
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -23,8 +43,9 @@ export PRINT_HELP_PYSCRIPT
 
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
-help:
-	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+black:  ## run black on python files
+	black lesion_metrics
+	black tests
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
@@ -47,20 +68,19 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
-lint: ## check style with flake8
-	flake8 lesion_metrics tests
-
-test: ## run tests quickly with the default Python
-	pytest
-
-test-all: ## run tests on every Python version with tox
-	tox
-
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source lesion_metrics -m pytest
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
+
+develop: clean ## symlink the package to the active Python's site-packages
+	python setup.py develop
+
+dist: clean ## builds source and wheel package
+	python setup.py sdist
+	python setup.py bdist_wheel
+	ls -l dist
 
 docs: ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/lesion_metrics*.rst
@@ -70,27 +90,42 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html
 
-servedocs: docs ## compile the docs watching for changes
-	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
+format:  ## run various code quality checks/formatters
+	$(MAKE) black
+	$(MAKE) isort
+	$(MAKE) mypy
+	$(MAKE) security
 
-release: dist ## package and upload a release
-	twine upload dist/*
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -l dist
+help:
+	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
-develop: clean ## symlink the package to the active Python's site-packages
-	python setup.py develop
-
-check:  ## run various code quality checks
-	black lesion_metrics
+isort:  ## isort python files
 	isort lesion_metrics
-	mypy lesion_metrics
-	black tests
 	isort tests
+
+lint: ## check style with flake8
+	flake8 lesion_metrics tests
+
+mypy:  ## typecheck code with mypy
+	mypy lesion_metrics
 	mypy tests
+
+release: dist ## package and upload a release
+	twine upload dist/*
+
+security:  ## various security checks
+	bandit -r lesion_metrics -c pyproject.toml
+	bandit -r tests -c pyproject.toml
+	snyk test --file=requirements_dev.txt --package-manager=pip --fail-on=all
+
+servedocs: docs  ## compile the docs watching for changes
+	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
+
+test: ## run tests quickly with the default Python
+	pytest
+
+test-all: ## run tests on every Python version with tox
+	tox

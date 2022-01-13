@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-lesion_metrics.volume
+"""Calculate total lesion burden in a segmentation mask
 
 calculation of lesion burden/volume given some
 type of medical image in a designated volume unit
@@ -9,20 +7,18 @@ Author: Jacob Reinhold (jacob.reinhold@jhu.edu)
 Created on: 16 Aug 2021
 """
 
-from enum import Enum
-from functools import reduce
-from operator import mul
-from pathlib import Path
-from typing import Type, TypeVar, Union
+from __future__ import annotations
 
-import torchio as tio
+import enum
+import functools
+import operator
 
-from lesion_metrics.types import PathLike
+import medio.image as mioi
 
-SV = TypeVar("SV", bound="SegmentationVolume")
+import lesion_metrics.typing as lmt
 
 
-class UnitOfVolume(Enum):
+class UnitOfVolume(enum.Enum):
     microlitre = "micro"
     microliter = "micro"
     milliliter = "milli"
@@ -34,15 +30,15 @@ class UnitOfVolume(Enum):
 class SegmentationVolume:
     def __init__(
         self,
-        label: tio.Image,
+        label: mioi.Image,
         unit: UnitOfVolume = UnitOfVolume.microliter,
     ):
         self.label = label
         self.unit = unit
 
     @classmethod
-    def from_filename(cls: Type[SV], path: PathLike) -> SV:
-        label = tio.LabelMap(path)
+    def from_filename(cls, path: lmt.PathLike) -> SegmentationVolume:
+        label = mioi.Image.from_path(path)
         return cls(label)
 
     def volume(self) -> float:
@@ -60,7 +56,8 @@ class SegmentationVolume:
         return self.volume_in_microliters()
 
     def volume_in_microliters(self) -> float:
-        per_voxel_volume = reduce(mul, self.label.spacing, 1.0)  # in microliters
-        n_positive_voxels = (self.label.numpy() > 0.0).sum()
+        # per_voxel_volume will be in microliters
+        per_voxel_volume = functools.reduce(operator.mul, self.label.spacing, 1.0)
+        n_positive_voxels = (self.label > 0.0).sum()
         volume_in_microliters: float = n_positive_voxels * per_voxel_volume
         return volume_in_microliters

@@ -27,7 +27,7 @@ Steps to reproduce the behavior:
  - lesion-metrics version (e.g., 0.1.14):
  - numpy version:
  - OS (e.g., Linux):
- - How you installed tiramisu-brulee (e.g., `pip` or source):
+ - How you installed lesion-metrics (e.g., `pip` or source):
  - Build command you used (if installed from source):
  - Python version:
  - Any other relevant information:

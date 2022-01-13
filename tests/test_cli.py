@@ -1,20 +1,20 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for `lesion_metrics` package."""
 
+import builtins
 import os
+import pathlib
 import shutil
-from pathlib import Path
-from typing import List, Union
+import typing
 
 import pytest
 
-from lesion_metrics.cli.aggregate import main
+import lesion_metrics.cli.aggregate as lmca
 
 
 @pytest.fixture
-def cwd() -> Path:
-    cwd = Path.cwd().resolve()
+def cwd() -> pathlib.Path:
+    cwd = pathlib.Path.cwd().resolve()
     if cwd.name == "tests":
         return cwd
     cwd = (cwd / "tests").resolve(strict=True)
@@ -22,11 +22,15 @@ def cwd() -> Path:
 
 
 @pytest.fixture(scope="session")
-def temp_dir(tmpdir_factory) -> Path:  # type: ignore[no-untyped-def]
-    return Path(tmpdir_factory.mktemp("out"))
+def temp_dir(tmpdir_factory) -> pathlib.Path:  # type: ignore[no-untyped-def]
+    return pathlib.Path(tmpdir_factory.mktemp("out"))
 
 
-def _copy_test_data(cwd: Path, temp_dir: Path, name: Union[str, os.PathLike]) -> Path:
+def _copy_test_data(
+    cwd: pathlib.Path,
+    temp_dir: pathlib.Path,
+    name: typing.Union[builtins.str, os.PathLike],
+) -> pathlib.Path:
     fn = cwd / "test_data" / name / f"{name}.nii.gz"
     tmp = temp_dir / name
     os.mkdir(tmp)
@@ -36,25 +40,27 @@ def _copy_test_data(cwd: Path, temp_dir: Path, name: Union[str, os.PathLike]) ->
 
 
 @pytest.fixture
-def pred_dir(cwd: Path, temp_dir: Path) -> Path:
+def pred_dir(cwd: pathlib.Path, temp_dir: pathlib.Path) -> pathlib.Path:
     return _copy_test_data(cwd, temp_dir, "pred")
 
 
 @pytest.fixture
-def truth_dir(cwd: Path, temp_dir: Path) -> Path:
+def truth_dir(cwd: pathlib.Path, temp_dir: pathlib.Path) -> pathlib.Path:
     return _copy_test_data(cwd, temp_dir, "truth")
 
 
 @pytest.fixture
-def out_file(temp_dir: Path) -> Path:
+def out_file(temp_dir: pathlib.Path) -> pathlib.Path:
     return temp_dir / "test.csv"
 
 
 @pytest.fixture
-def args(pred_dir: Path, truth_dir: Path, out_file: Path) -> List[str]:
+def args(
+    pred_dir: pathlib.Path, truth_dir: pathlib.Path, out_file: pathlib.Path
+) -> typing.List[builtins.str]:
     return f"-p {pred_dir} -t {truth_dir} -o {out_file} -c".split()
 
 
-def test_cli(args: List[str]) -> None:
-    retval = main(args)
+def test_cli(args: typing.List[builtins.str]) -> None:
+    retval = lmca.main(args)
     assert retval == 0

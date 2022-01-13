@@ -1,13 +1,21 @@
 lesion\_metrics package
 =======================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   lesion_metrics.cli
+
 Submodules
 ----------
 
-lesion\_metrics.cli module
---------------------------
+lesion\_metrics.helper module
+-----------------------------
 
-.. automodule:: lesion_metrics.cli
+.. automodule:: lesion_metrics.helper
    :members:
    :undoc-members:
    :show-inheritance:
@@ -20,10 +28,10 @@ lesion\_metrics.metrics module
    :undoc-members:
    :show-inheritance:
 
-lesion\_metrics.types module
-----------------------------
+lesion\_metrics.typing module
+-----------------------------
 
-.. automodule:: lesion_metrics.types
+.. automodule:: lesion_metrics.typing
    :members:
    :undoc-members:
    :show-inheritance:
