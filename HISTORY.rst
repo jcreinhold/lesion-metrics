@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.12 (2022-01-21)
+-------------------
+
+* Reduce pymedio dependency in volume calculation
+
 0.1.11 (2022-01-13)
 -------------------
 
