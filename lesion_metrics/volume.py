@@ -3,7 +3,7 @@
 calculation of lesion burden/volume given some
 type of medical image in a designated volume unit
 
-Author: Jacob Reinhold (jacob.reinhold@jhu.edu)
+Author: Jacob Reinhold (jcreinhold@gmail.com)
 Created on: 16 Aug 2021
 """
 
@@ -12,8 +12,6 @@ from __future__ import annotations
 import enum
 import functools
 import operator
-
-import medio.image as mioi
 
 import lesion_metrics.typing as lmt
 
@@ -30,7 +28,7 @@ class UnitOfVolume(enum.Enum):
 class SegmentationVolume:
     def __init__(
         self,
-        label: mioi.Image,
+        label: lmt.LabelWithSpacing,
         unit: UnitOfVolume = UnitOfVolume.microliter,
     ):
         self.label = label
@@ -38,6 +36,12 @@ class SegmentationVolume:
 
     @classmethod
     def from_filename(cls, path: lmt.PathLike) -> SegmentationVolume:
+        try:
+            import medio.image as mioi
+        except ImportError as imp_exn:
+            msg = "Require pymedio with 'all' extras to use this method"
+            raise RuntimeError(msg) from imp_exn
+
         label = mioi.Image.from_path(path)
         return cls(label)
 

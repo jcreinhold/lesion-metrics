@@ -16,6 +16,7 @@ import typing
 
 __all__ = [
     "Label",
+    "LabelWithSpacing",
     "NaN",
     "PathLike",
 ]
@@ -60,4 +61,10 @@ class Label(typing.Protocol):
         ...
 
     def squeeze(self) -> typing.Any:
+        ...
+
+
+class LabelWithSpacing(Label, typing.Protocol):
+    @property
+    def spacing(self) -> typing.Tuple[builtins.float, ...]:
         ...
